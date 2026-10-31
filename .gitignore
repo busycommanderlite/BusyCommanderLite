@@ -1,0 +1,49 @@
+# Build output
+bin/
+obj/
+*.exe
+*.dll
+*.pdb
+*.cache
+
+# Go server build artifacts (keep source, ignore compiled output)
+BusyCommanderLite/server/server.exe
+BusyCommanderLite/server/server.dll
+BusyCommanderLite/server/server.h
+BusyCommanderLite/server/test_32.dll
+BusyCommanderLite/server/test_32.h
+BusyCommanderLite/server/server_static.h
+
+# WhatsApp session database (contains auth keys - NEVER commit)
+*.db
+*.db-wal
+*.db-shm
+**/store.db
+**/store.db-wal
+**/store.db-shm
+
+# Backup and update swap files
+*.old
+*.new
+*.bak
+
+# Local debug logs & review bundles
+debug_log.txt
+DEBUG.txt
+full_code_review*.txt
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.vspscc
+*.vssscc
+
+# NuGet
+packages/
+
+# OS files
+Thumbs.db
+desktop.ini
+.DS_Store
+
