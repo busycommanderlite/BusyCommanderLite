@@ -20,6 +20,16 @@ Get the official, pre-compiled Windows installer:
 
 ---
 
+## 📺 Video Tutorial & Live Demo
+
+Watch the complete setup and live workflow in action:
+
+[![Watch BusyCommander Tutorial on YouTube](https://img.youtube.com/vi/BBclg-Lzdig/hqdefault.jpg)](https://www.youtube.com/watch?v=BBclg-Lzdig)
+
+▶️ **[Watch the full tutorial on YouTube: How to Send WhatsApp Messages Directly from Busy Accounting Software](https://www.youtube.com/watch?v=BBclg-Lzdig)**
+
+---
+
 ## ✨ Key Features
 
 | Feature | Description |
@@ -153,3 +163,4 @@ This project is open-source software licensed under the **[MIT License](LICENSE)
 <p align="center">
   <b>BusyCommanderLite</b> — Empowering Busy Accounting users with free, fast, and modern automation.
 </p>
+
