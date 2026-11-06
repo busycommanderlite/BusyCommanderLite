@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#FFFFFF"/>
+  
+  <!-- Outer Square Border -->
+  <rect x="18" y="18" width="476" height="476" fill="none" stroke="#000000" stroke-width="10"/>
+  
+  <!-- Letter B (Bold Stencil Monogram) -->
+  <!-- B Stem -->
+  <rect x="76" y="142" width="52" height="228" fill="#000000"/>
+  
+  <!-- B Loops -->
+  <path d="M 142 142 
+           H 206 
+           C 238 142 258 160 258 194 
+           C 258 220 242 238 218 248 
+           C 248 258 266 280 266 316 
+           C 266 352 242 370 206 370 
+           H 142 
+           Z 
+           M 178 178 
+           V 228 
+           H 202 
+           C 218 228 226 218 226 203 
+           C 226 188 218 178 202 178 
+           Z 
+           M 178 262 
+           V 334 
+           H 204 
+           C 222 334 232 322 232 298 
+           C 232 274 222 262 204 262 
+           Z" fill="#000000"/>
+  
+  <!-- Letter C (Bold Geometric Circle with Right Gap) -->
+  <path d="M 374 142 
+           C 438 142 488 192 488 256 
+           C 488 320 438 370 374 370 
+           C 310 370 260 320 260 256 
+           C 260 192 310 142 374 142 
+           Z 
+           M 374 198 
+           C 342 198 316 224 316 256 
+           C 316 288 342 314 374 314 
+           C 406 314 432 288 432 256 
+           C 432 224 406 198 374 198 
+           Z" fill="#000000"/>
+           
+  <!-- C Opening Slit -->
+  <rect x="424" y="242" width="70" height="28" fill="#FFFFFF"/>
+</svg>
