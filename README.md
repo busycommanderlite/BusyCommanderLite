@@ -63,18 +63,32 @@ flowchart LR
 
 ## ⌨️ Keyboard Shortcuts (Inside Busy)
 
-Once installed, use these single-key shortcuts directly within the **Sales Register** or **Voucher List**:
+Once installed, use these single-key shortcuts directly within Busy:
 
+### Sales Register
 | Key | Action |
 | :---: | :--- |
 | <kbd>B</kbd> | Send Invoice via **WhatsApp** (PDF or Image) |
-| <kbd>Q</kbd> | Send Invoice + **Dynamic Payment UPI QR Code** |
-| <kbd>S</kbd> | Print / Preview Hisab Slip |
-| <kbd>P</kbd> | Quick Print Voucher (A6 / Compact format) |
-| <kbd>M</kbd> | Open Mobile Number Entry dialog |
-| <kbd>U</kbd> | Open Hindi Transliteration Box |
-| <kbd>Shift</kbd> + *Initials* | Instant party ledger hisab lookup |
-| <kbd>Esc</kbd> | Close popup / return to Busy |
+| <kbd>Q</kbd> | Send Invoice + **Payment UPI QR Code** (Fixed or Configured amount) |
+| <kbd>M</kbd> | Send Custom WhatsApp message to party |
+| <kbd>Shift</kbd> + *Initials* | Instant jump to party's invoice in list |
+| <kbd>S</kbd> | **Create Dispatch Slip** (Add party + carton count) |
+| <kbd>P</kbd> | **Print Dispatch Slip** (A6) & update voucher Long Narration |
+| <kbd>C</kbd> | Clear current dispatch slip |
+| <kbd>G</kbd> | **Update Gadi No.** (Vehicle/transport slip entry dialog) |
+| <kbd>U</kbd> | Select Un-updated invoices (missing vehicle info) |
+
+### Bill-wise Statement & Ledger
+| Key | Action |
+| :---: | :--- |
+| <kbd>H</kbd> | Send **Hisab** statement to customer via WhatsApp |
+| <kbd>T</kbd> | Calculate & show total amount of selected entries |
+| <kbd>P</kbd> | Print Hisab (A6 size; auto-scales for long lists) |
+| <kbd>B</kbd> | Send selected bill via WhatsApp |
+| <kbd>Q</kbd> | Send configured QR code |
+| <kbd>M</kbd> | Send custom WhatsApp message |
+
+> 📖 **Need more details?** Check out the comprehensive **[Complete User Manual & Setup Guide (USER_MANUAL.md)](USER_MANUAL.md)** for detailed workflows on Dispatch Slips, DP verification, and Hindi transliteration.
 
 ---
 
@@ -85,7 +99,7 @@ Once installed, use these single-key shortcuts directly within the **Sales Regis
 - **Accounting Software:** [Busy Accounting Software](https://busy.in) (Busy 18 / Busy 21)
 - **Runtime:** Microsoft .NET Framework 4.8 (pre-installed on most modern Windows systems)
 
-### 3-Step Setup
+### 4-Step Setup
 1. **Download & Install:**
    - Download **[BusyCommanderLite_Setup_v1.0.0.zip](https://github.com/busycommanderlite/BusyCommanderLite/releases/latest/download/BusyCommanderLite_Setup_v1.0.0.zip)**.
    - Extract the ZIP archive and run `setup.exe` (follow the standard Windows installer wizard).
@@ -95,7 +109,13 @@ Once installed, use these single-key shortcuts directly within the **Sales Regis
 3. **Link WhatsApp:**
    - A clean QR code dialog will appear on screen.
    - Open WhatsApp on your phone &rarr; **Linked Devices** &rarr; **Link a Device** &rarr; Scan the QR code.
-   - Done! You are ready to send your first invoice.
+4. **Configure WhatsApp / SMS in Busy:**
+   - In Busy, press <kbd>Ctrl</kbd> + <kbd>F</kbd> &rarr; **WhatsApp / SMS Configuration**.
+   - Create a format (e.g. `BCommander`) and set the API URL:
+     - **PDF Document:** `http://localhost:54321/send?phoneNo=mobNum&messageText=message`
+     - **Auto-cropped Image:** `http://localhost:54321/sendimage?phoneNo=mobNum&messageText=message`
+   - Select **Service Provider Server** (if hidden, press <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>V</kbd> to make it visible).
+   - Done! You can now send invoices and reports using Busy's standard SMS button.
 
 ---
 
