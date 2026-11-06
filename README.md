@@ -1,10 +1,16 @@
-# BusyCommanderLite 🚀
+<p align="center">
+  <img src="assets/logo.png" width="140" height="140" alt="BusyCommanderLite Logo" />
+</p>
 
-[![Latest Release](https://img.shields.io/github/v/release/busycommanderlite/BusyCommanderLite?color=brightgreen&label=Latest%20Version)](https://github.com/busycommanderlite/BusyCommanderLite/releases/latest)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
-[![Compatibility](https://img.shields.io/badge/Tested%20With-Busy%2018%20%2F%20Busy%2021-orange.svg)](https://busy.in)
-[![Status](https://img.shields.io/badge/Cost-100%25%20Free%20%26%20Open%20Source-success.svg)](#license)
+<h1 align="center">BusyCommanderLite 🚀</h1>
+
+<p align="center">
+  <a href="https://github.com/busycommanderlite/BusyCommanderLite/releases/latest"><img src="https://img.shields.io/github/v/release/busycommanderlite/BusyCommanderLite?color=brightgreen&label=Latest%20Version" alt="Latest Release" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
+  <a href="https://www.microsoft.com/windows"><img src="https://img.shields.io/badge/Platform-Windows-lightgrey.svg" alt="Platform" /></a>
+  <a href="https://busy.in"><img src="https://img.shields.io/badge/Tested%20With-Busy%2018%20%2F%20Busy%2021-orange.svg" alt="Compatibility" /></a>
+  <a href="#license"><img src="https://img.shields.io/badge/Cost-100%25%20Free%20%26%20Open%20Source-success.svg" alt="Status" /></a>
+</p>
 
 > **The 100% Free, Open-Source WhatsApp Automation & Smart Utility Suite for Busy Accounting Software.**  
 > Send invoices, payment QR codes, outstanding hisab slips, and receipt notifications straight to WhatsApp directly from Busy — no recurring subscriptions, no cloud API fees, and no third-party gatekeepers.

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" width="130" height="130" alt="BusyCommanderLite Logo" />
+</p>
+
 # BusyCommanderLite User Manual & Setup Guide 📖
 
 > [!CAUTION]
