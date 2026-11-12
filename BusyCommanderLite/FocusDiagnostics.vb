@@ -201,9 +201,18 @@ End Class
 Public Class DialogFocusGuard
     Implements IDisposable
 
+    Private Shared _activeCount As Integer = 0
+
+    Public Shared ReadOnly Property ActiveCount As Integer
+        Get
+            Return System.Threading.Volatile.Read(_activeCount)
+        End Get
+    End Property
+
     Private disabledHwnds As New List(Of IntPtr)()
     Private restoreTargetHwnd As IntPtr = IntPtr.Zero
     Private ownerWrapper As IWin32Window
+    Private isDisposed As Boolean = False
 
     Public ReadOnly Property Owner As IWin32Window
         Get
@@ -212,6 +221,7 @@ Public Class DialogFocusGuard
     End Property
 
     Public Sub New()
+        System.Threading.Interlocked.Increment(_activeCount)
         Try
             ' 1. Purge any queued keyboard messages (e.g. premature Enter pressed during VBScript execution)
             Dim purged = FocusDiagnostics.PurgeKeyboardQueue()
@@ -257,6 +267,8 @@ Public Class DialogFocusGuard
     End Sub
 
     Public Sub Dispose() Implements IDisposable.Dispose
+        If isDisposed Then Return
+        isDisposed = True
         Try
             ' 1. Wait until user physically releases Enter and Escape so keystrokes cannot leak
             FocusDiagnostics.WaitKeyRelease(FocusDiagnostics.VK_RETURN, 500)
@@ -286,6 +298,8 @@ Public Class DialogFocusGuard
             End If
         Catch ex As Exception
             FocusDiagnostics.Log("DialogFocusGuard Dispose Exception: " & ex.Message)
+        Finally
+            System.Threading.Interlocked.Decrement(_activeCount)
         End Try
     End Sub
 End Class

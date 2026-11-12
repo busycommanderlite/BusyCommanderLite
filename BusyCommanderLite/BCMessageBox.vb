@@ -19,7 +19,7 @@ Public Class BCMessageBox
         If type = "YesNo" Then
             isYesNo = True
             lblBottom.Text = "[ Y / Enter - Yes  |  N / Esc - No ]"
-            If title.ToUpper() = "WARNING" Then
+            If title.ToUpper() = "WARNING" OrElse title.ToUpper() = "CONFIRM DELETE" Then
                 lblTitle.BackColor = Color.OrangeRed
                 lblBottom.BackColor = Color.OrangeRed
             Else
@@ -109,12 +109,14 @@ Public Class BCMessageBox
             If e.KeyCode = Keys.Y OrElse e.KeyCode = Keys.Enter Then
                 FocusDiagnostics.Log("BCMessageBox KeyDown: Yes selected via " & e.KeyCode.ToString())
                 result = DialogResult.Yes
+                FocusDiagnostics.WaitKeyRelease(CInt(e.KeyCode), 500)
                 FocusDiagnostics.WaitKeyRelease(FocusDiagnostics.VK_RETURN, 500)
                 FocusDiagnostics.PurgeKeyboardQueue()
                 Me.DialogResult = DialogResult.Yes
             ElseIf e.KeyCode = Keys.N OrElse e.KeyCode = Keys.Escape Then
                 FocusDiagnostics.Log("BCMessageBox KeyDown: No selected via " & e.KeyCode.ToString())
                 result = DialogResult.No
+                FocusDiagnostics.WaitKeyRelease(CInt(e.KeyCode), 500)
                 FocusDiagnostics.WaitKeyRelease(FocusDiagnostics.VK_ESCAPE, 500)
                 FocusDiagnostics.PurgeKeyboardQueue()
                 Me.DialogResult = DialogResult.No

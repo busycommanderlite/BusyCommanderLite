@@ -175,7 +175,34 @@ Public Class MyApp
         Return DispatchRepository.SaveDispatches(SignContent, GivenGadi)
     End Function
 
+    Public Function IsModalDialogOpen() As Boolean
+        If DialogFocusGuard.ActiveCount > 0 OrElse DispatchManagerForm.IsFormOpen Then
+            Return True
+        End If
+        Try
+            Dim fg = FocusDiagnostics.GetForegroundWindow()
+            If fg <> IntPtr.Zero Then
+                Dim fgProcId As UInteger = 0
+                GetWindowThreadProcessId(fg, fgProcId)
+                Dim curProcId = CUInt(Process.GetCurrentProcess().Id)
+                If fgProcId = curProcId Then
+                    Dim sbClass As New System.Text.StringBuilder(256)
+                    FocusDiagnostics.GetClassName(fg, sbClass, 256)
+                    If sbClass.ToString().StartsWith("WindowsForms10", StringComparison.OrdinalIgnoreCase) Then
+                        Return True
+                    End If
+                End If
+            End If
+        Catch
+        End Try
+        Return False
+    End Function
+
     Public Function ShowDispatchManager(Optional selectedVchNo As String = "") As String
+        If DialogFocusGuard.ActiveCount > 0 OrElse DispatchManagerForm.IsFormOpen Then
+            FocusDiagnostics.LogSnapshot("ShowDispatchManager BLOCKED (modal dialog already open)")
+            Return ""
+        End If
         Dim form As New DispatchManagerForm()
         Using guard As New DialogFocusGuard()
             form.ShowDialog(guard.Owner)
@@ -411,6 +438,13 @@ Public Class MyApp
             If script.Contains(targetPattern) Then
                 script = script.Replace(targetPattern, replacementPattern)
             End If
+
+            ' Block Busy report hotkeys whenever a BusyCommander modal dialog (e.g. UnUpdated Dispatches) is open
+            Dim keyDownTarget As String = "If Not validScript Then" & vbCrLf & vbTab & vbTab & "Exit Sub" & vbCrLf & vbTab & "End If"
+            Dim keyDownReplacement As String = keyDownTarget & vbCrLf & vbCrLf & vbTab & "On Error Resume Next" & vbCrLf & vbTab & "If objBC.IsModalDialogOpen() Then" & vbCrLf & vbTab & vbTab & "KeyCode = 0" & vbCrLf & vbTab & vbTab & "Exit Sub" & vbCrLf & vbTab & "End If" & vbCrLf & vbTab & "On Error GoTo 0"
+            If script.Contains(keyDownTarget) AndAlso Not script.Contains("IsModalDialogOpen") Then
+                script = script.Replace(keyDownTarget, keyDownReplacement)
+            End If
         End If
         Return script
     End Function
@@ -420,6 +454,10 @@ Public Class MyApp
     End Function
 
     Public Function ProcessGKey(vchNo As String, partyName As String) As String
+        If DialogFocusGuard.ActiveCount > 0 OrElse DispatchManagerForm.IsFormOpen Then
+            FocusDiagnostics.LogSnapshot(String.Format("ProcessGKey BLOCKED (modal dialog already open): VchNo='{0}', Party='{1}'", vchNo, partyName))
+            Return "CANCELLED"
+        End If
         FocusDiagnostics.LogSnapshot(String.Format("ProcessGKey ENTRY: VchNo='{0}', Party='{1}'", vchNo, partyName))
         Dim dispatches = DispatchRepository.GetDispatchesForVoucher(vchNo)
         If dispatches.Count = 0 Then

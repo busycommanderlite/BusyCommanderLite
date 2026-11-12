@@ -7,6 +7,8 @@ Imports System.Windows.Forms
 Public Class DispatchManagerForm
     Inherits Form
 
+    Public Shared Property IsFormOpen As Boolean = False
+
     Private WithEvents dgvDispatches As DataGridView
     Private WithEvents lblTitle As Label
 
@@ -17,6 +19,17 @@ Public Class DispatchManagerForm
     Private isAppendingBatch As Boolean = False
     Private isLoading As Boolean = False
     Private ReadOnly loadedIds As New HashSet(Of Integer)()
+
+    Private openTime As DateTime = DateTime.Now
+    Private lastChildDialogCloseTime As DateTime = DateTime.MinValue
+    Private pendingEnterDown As Boolean = False
+    Private pendingEscapeDown As Boolean = False
+    Private pendingDeleteDown As Boolean = False
+    Private isClosing As Boolean = False
+
+    <System.Runtime.InteropServices.DllImport("user32.dll")>
+    Private Shared Function SetForegroundWindow(hWnd As IntPtr) As Boolean
+    End Function
 
     Private Shared ReadOnly FontPendingMain As New Font("Segoe UI Semibold", 15.0F, FontStyle.Bold)
     Private Shared ReadOnly FontPendingDate As New Font("Segoe UI Semibold", 10.5F, FontStyle.Bold)
@@ -95,8 +108,13 @@ Public Class DispatchManagerForm
     End Sub
 
     Private Sub DispatchManagerForm_Load(sender As Object, e As EventArgs) Handles Me.Load
+        IsFormOpen = True
+        isClosing = False
+        ClearPendingKeys()
         SetupGridColumns()
         LoadDispatches()
+        openTime = DateTime.Now
+        FocusDiagnostics.LogSnapshot("DispatchManagerForm_Load", Me.Handle)
     End Sub
 
     Private Sub SetupGridColumns()
@@ -235,14 +253,43 @@ Public Class DispatchManagerForm
         dgvDispatches.Focus()
     End Sub
 
+    Private Sub ClearPendingKeys()
+        pendingEnterDown = False
+        pendingEscapeDown = False
+        pendingDeleteDown = False
+    End Sub
+
+    Private Function IsWithinGuardWindow() As Boolean
+        Dim elapsedMs = (DateTime.Now - openTime).TotalMilliseconds
+        If elapsedMs < 300 Then Return True
+        If lastChildDialogCloseTime <> DateTime.MinValue AndAlso (DateTime.Now - lastChildDialogCloseTime).TotalMilliseconds < 250 Then
+            Return True
+        End If
+        Return False
+    End Function
+
     Private Sub ReturnVchNoAndClose()
         If dgvDispatches.SelectedRows.Count = 0 Then Return
 
         Dim row = dgvDispatches.SelectedRows(0)
         Dim vchNo = Convert.ToString(row.Cells("VchNo").Value)
 
+        FocusDiagnostics.Log(String.Format("DispatchManagerForm ReturnVchNoAndClose: VchNo='{0}'", vchNo))
+        FocusDiagnostics.WaitKeyRelease(FocusDiagnostics.VK_RETURN, 500)
+        FocusDiagnostics.PurgeKeyboardQueue()
+
         Me.UpdatedVchNo = vchNo
         Me.DialogResult = DialogResult.OK
+        Me.Close()
+    End Sub
+
+    Private Sub CloseOnEscape()
+        FocusDiagnostics.Log("DispatchManagerForm CloseOnEscape")
+        FocusDiagnostics.WaitKeyRelease(FocusDiagnostics.VK_ESCAPE, 500)
+        FocusDiagnostics.PurgeKeyboardQueue()
+
+        Me.UpdatedVchNo = ""
+        Me.DialogResult = DialogResult.Cancel
         Me.Close()
     End Sub
 
@@ -280,13 +327,23 @@ Public Class DispatchManagerForm
         Dim nag = Convert.ToString(row.Cells("Nag").Value)
         Dim delIdx = row.Index
 
-        Dim confirm = MessageBox.Show(
-            "Delete dispatch for " & partyName & " (Nag: " & nag & ")?" & Environment.NewLine &
-            "This cannot be undone.",
-            "Confirm Delete",
-            MessageBoxButtons.YesNo,
-            MessageBoxIcon.Warning,
-            MessageBoxDefaultButton.Button2)
+        FocusDiagnostics.Log(String.Format("DispatchManagerForm DeleteSelectedRow: Id={0}, Party='{1}'", id, partyName))
+        FocusDiagnostics.WaitKeyRelease(CInt(Keys.Delete), 500)
+        FocusDiagnostics.PurgeKeyboardQueue()
+
+        Dim confirm As DialogResult
+        Using box As New BCMessageBox()
+            confirm = box.ShowAlert(
+                "Confirm Delete",
+                "Delete dispatch for " & partyName & " (Nag: " & nag & ")?" & Environment.NewLine &
+                "This cannot be undone.",
+                "YesNo",
+                Me)
+        End Using
+
+        lastChildDialogCloseTime = DateTime.Now
+        ClearPendingKeys()
+        FocusDiagnostics.PurgeKeyboardQueue()
 
         If confirm = DialogResult.Yes Then
             DispatchRepository.DeleteDispatch(id)
@@ -309,6 +366,12 @@ Public Class DispatchManagerForm
                 isLoading = False
             End Try
         End If
+
+        Try
+            Me.Activate()
+            dgvDispatches.Focus()
+        Catch
+        End Try
     End Sub
 
     Private Function Clean10DigitPhone(num As String) As String
@@ -320,14 +383,20 @@ Public Class DispatchManagerForm
         Return ""
     End Function
 
-    Private openTime As DateTime = DateTime.Now
-
     Protected Overrides Function ProcessCmdKey(ByRef msg As Message, keyData As Keys) As Boolean
-        If (DateTime.Now - openTime).TotalMilliseconds < 300 AndAlso (keyData = Keys.Enter OrElse keyData = Keys.Escape) Then
+        Dim keyCode As Keys = keyData And Keys.KeyCode
+        Dim modifiers As Keys = keyData And Keys.Modifiers
+
+        If (modifiers And (Keys.Control Or Keys.Alt)) <> Keys.None Then
+            Return MyBase.ProcessCmdKey(msg, keyData)
+        End If
+
+        If IsWithinGuardWindow() Then
+            FocusDiagnostics.Log(String.Format("DispatchManagerForm ProcessCmdKey: Swallowed key {0} during guard window", keyData))
             Return True
         End If
 
-        Select Case keyData
+        Select Case keyCode
             Case Keys.Down, Keys.PageDown, Keys.End
                 If Not isLoading AndAlso Not isAppendingBatch AndAlso dgvDispatches.SelectedRows.Count > 0 Then
                     Dim selIdx = dgvDispatches.SelectedRows(0).Index
@@ -335,19 +404,33 @@ Public Class DispatchManagerForm
                         AppendBatch(50)
                     End If
                 End If
+                Return MyBase.ProcessCmdKey(msg, keyData)
+            Case Keys.Up, Keys.Left, Keys.Right, Keys.PageUp, Keys.Home, Keys.Tab
+                Return MyBase.ProcessCmdKey(msg, keyData)
             Case Keys.Escape
+                pendingEscapeDown = True
+                FocusDiagnostics.Log("DispatchManagerForm ProcessCmdKey: Escape captured")
                 Return True
             Case Keys.Enter
                 ' Suppress Enter in ProcessCmdKey to prevent DataGridView from moving row down
                 ' The actual action will be handled in dgvDispatches_KeyUp
-                If dgvDispatches.Focused OrElse Me.Focused Then Return True
+                If dgvDispatches.ContainsFocus OrElse Me.Focused Then
+                    pendingEnterDown = True
+                    FocusDiagnostics.Log("DispatchManagerForm ProcessCmdKey: Enter captured")
+                    Return True
+                End If
             Case Keys.Delete
-                If dgvDispatches.Focused OrElse Me.Focused Then
-                    DeleteSelectedRow()
+                If dgvDispatches.ContainsFocus OrElse Me.Focused Then
+                    pendingDeleteDown = True
+                    FocusDiagnostics.Log("DispatchManagerForm ProcessCmdKey: Delete captured")
                     Return True
                 End If
             Case Keys.F5
                 LoadDispatches()
+                Return True
+            Case Else
+                ' Swallow unhandled keys (e.g. G, B, Q, M, S, P, U, Shift+Letter) so they cannot leak
+                FocusDiagnostics.Log(String.Format("DispatchManagerForm ProcessCmdKey: Swallowed stray key {0}", keyData))
                 Return True
         End Select
         Return MyBase.ProcessCmdKey(msg, keyData)
@@ -355,10 +438,50 @@ Public Class DispatchManagerForm
 
     Private Sub DispatchManagerForm_Shown(sender As Object, e As EventArgs) Handles Me.Shown
         Try
+            FocusDiagnostics.LogSnapshot("DispatchManagerForm_Shown Entry", Me.Handle)
             Activate()
+            Dim setFgRes = SetForegroundWindow(Me.Handle)
+            FocusDiagnostics.Log(String.Format("DispatchManagerForm_Shown: SetForegroundWindow returned {0}", setFgRes))
             dgvDispatches.Focus()
-        Catch
+            openTime = DateTime.Now
+            ClearPendingKeys()
+            FocusDiagnostics.PurgeKeyboardQueue()
+            FocusDiagnostics.LogSnapshot("DispatchManagerForm_Shown Exit", Me.Handle)
+        Catch ex As Exception
+            FocusDiagnostics.Log("DispatchManagerForm_Shown Exception: " & ex.Message)
         End Try
+    End Sub
+
+    Private Sub DispatchManagerForm_Activated(sender As Object, e As EventArgs) Handles Me.Activated
+        ClearPendingKeys()
+        FocusDiagnostics.Log(String.Format("DispatchManagerForm ACTIVATED. CurrentFocus={0}", FocusDiagnostics.GetWindowInfo(FocusDiagnostics.GetFocus())))
+    End Sub
+
+    Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
+        isClosing = True
+        IsFormOpen = False
+        ClearPendingKeys()
+        MyBase.OnFormClosing(e)
+    End Sub
+
+    Protected Overrides Sub OnFormClosed(e As FormClosedEventArgs)
+        IsFormOpen = False
+        ClearPendingKeys()
+        MyBase.OnFormClosed(e)
+    End Sub
+
+    Private Sub DispatchManagerForm_Deactivate(sender As Object, e As EventArgs) Handles Me.Deactivate
+        ClearPendingKeys()
+        If isClosing OrElse Me.DialogResult <> DialogResult.None OrElse Me.Disposing OrElse Me.IsDisposed Then
+            FocusDiagnostics.Log("DispatchManagerForm Deactivated (normal close)")
+        Else
+            Dim fg = FocusDiagnostics.GetForegroundWindow()
+            If fg <> Me.Handle Then
+                FocusDiagnostics.LogSnapshot("DispatchManagerForm DEACTIVATED UNEXPECTEDLY (lost focus or child dialog)", Me.Handle)
+            Else
+                FocusDiagnostics.Log("DispatchManagerForm Deactivated (internal)")
+            End If
+        End If
     End Sub
 
     Private Sub dgvDispatches_CellDoubleClick(sender As Object, e As DataGridViewCellEventArgs) Handles dgvDispatches.CellDoubleClick
@@ -367,11 +490,38 @@ Public Class DispatchManagerForm
         End If
     End Sub
 
+    Private Sub dgvDispatches_KeyDown(sender As Object, e As KeyEventArgs) Handles dgvDispatches.KeyDown, Me.KeyDown
+        If e.KeyCode = Keys.Enter OrElse e.KeyCode = Keys.Escape OrElse e.KeyCode = Keys.Delete Then
+            e.Handled = True
+            e.SuppressKeyPress = True
+        End If
+    End Sub
+
     Private Sub dgvDispatches_KeyUp(sender As Object, e As KeyEventArgs) Handles dgvDispatches.KeyUp, Me.KeyUp
-        If e.KeyCode = Keys.Enter Then
+        If IsWithinGuardWindow() Then
+            If e.KeyCode = Keys.Enter OrElse e.KeyCode = Keys.Escape OrElse e.KeyCode = Keys.Delete Then
+                e.Handled = True
+                e.SuppressKeyPress = True
+                FocusDiagnostics.Log(String.Format("DispatchManagerForm KeyUp: Ignored {0} during guard window", e.KeyCode))
+            End If
+            Return
+        End If
+
+        If e.KeyCode = Keys.Enter AndAlso pendingEnterDown Then
+            pendingEnterDown = False
+            e.Handled = True
+            e.SuppressKeyPress = True
             ReturnVchNoAndClose()
-        ElseIf e.KeyCode = Keys.Escape Then
-            Me.Close()
+        ElseIf e.KeyCode = Keys.Escape AndAlso pendingEscapeDown Then
+            pendingEscapeDown = False
+            e.Handled = True
+            e.SuppressKeyPress = True
+            CloseOnEscape()
+        ElseIf e.KeyCode = Keys.Delete AndAlso pendingDeleteDown Then
+            pendingDeleteDown = False
+            e.Handled = True
+            e.SuppressKeyPress = True
+            DeleteSelectedRow()
         End If
     End Sub
 
